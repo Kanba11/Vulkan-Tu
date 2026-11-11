@@ -1,0 +1,222 @@
+= Base code
+
+== volk initialize
+
+To use volk, you have to include volk.h instead of vulkan/vulkan.h; this is necessary to use function definitions from volk.
+If some files in your application include vulkan/vulkan.h and don't include volk.h, this can result in symbol conflicts; consider defining VK_NO_PROTOTYPES when compiling code that uses Vulkan to make sure this doesn't happen. It's also important to make sure that vulkan-1 is not linked into the application, as this results in symbol name conflicts as well.
+To initialize volk, call this function first:
+
+[source,c++]
+----
+#define VOLK_IMPLEMENTATION
+#include "volk.h"
+
+void initVulkan() {
+    if (volkInitialize() != VK_SUCCESS) {
+        throw std::runtime_error("failed to initialize volk!");
+    }
+}
+----
+
+== General structure
+
+In the previous chapter, you've created a Vulkan project with all the proper configurations and tested it with the sample code.
+In this chapter, we're starting from scratch with the following code:
+
+[source,c++]
+----
+#define VOLK_IMPLEMENTATION
+#include "volk.h"
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
+
+#include <cstdlib>
+#include <iostream>
+#include <stdexcept>
+
+class HelloTriangleApplication {
+public:
+    void run() {
+        initVulkan();
+        mainLoop();
+        cleanup();
+    }
+
+private:
+    void initWindow() {
+
+    }
+
+    void initVulkan() {
+
+    }
+
+    void mainLoop() {
+
+    }
+
+    void cleanup() {
+
+    }
+};
+
+int main() {
+    HelloTriangleApplication app;
+
+    try {
+        app.run();
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+----
+
+We first include the Vulkan header from the LunarG SDK, which provides the
+functions, structures and enumerations. The `stdexcept` and `iostream` headers
+are included for reporting and propagating errors. The `cstdlib`
+header provides the `EXIT_SUCCESS` and `EXIT_FAILURE` macros.
+
+The program itself is wrapped into a class where we'll store the Vulkan objects
+as private class members and add functions to initiate each of them, which will
+be called from the `initVulkan` function. Once everything has been prepared, we
+enter the main loop to start rendering frames. We'll fill in the `mainLoop`
+function to include a loop that iterates until the window is closed in a moment.
+Once the window is closed and `mainLoop` returns, we'll make sure to deallocate
+the resources we've used in the `cleanup` function.
+
+If any kind of fatal error occurs during execution then we'll throw a
+`std::runtime_error` exception with a descriptive message, which will propagate
+back to the `main` function and be printed to the command prompt. To handle 
+a variety of standard exception types as well, we catch the more general `std::exception`. One example of an error that we will deal with soon is finding 
+out that a certain required extension is not supported.
+
+Roughly every chapter that follows after this one will add one new function that
+will be called from `initVulkan` and one or more new Vulkan objects to the
+private class members that need to be freed at the end in `cleanup`.
+
+== Integrating SDL
+
+Vulkan works perfectly fine without creating a window if you want to use it for off-screen rendering.
+
+[source,c++]
+----
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+----
+
+That way, SDL will include its own definitions and automatically load the Vulkan
+C header with it. Add a `initWindow` function and add a call to it from the
+`run` function before the other calls. We'll use that function to initialize
+SDL and create a window.
+
+[source,c++]
+----
+void run() {
+    initWindow();
+    initVulkan();
+    mainLoop();
+    cleanup();
+}
+
+private:
+    void initWindow() {
+    }
+----
+
+The very first call in `initWindow` should be `SDL_Init()`, which initializes the SDL library.
+
+[source,c++]
+----
+SDL_Init(SDL_INIT_VIDEO);
+----
+
+All that's left now is creating the actual window. Add a `SDL_Window *window = nullptr`
+private class member to store a reference to it and initialize the window with:
+
+[source,c++]
+----
+window = SDL_CreateWindow("Vulkan", WIDTH, HEIGHT, SDL_WINDOW_VULKAN);
+----
+
+It's a good idea to use constants instead of hardcoded width and height numbers
+because we'll be referring to these values a couple of times in the future. I've
+added the following lines above the `HelloTriangleApplication` class definition:
+
+[source,c++]
+----
+const uint32_t WIDTH  = 800;
+const uint32_t HEIGHT = 600;
+----
+
+To keep the application running until either an error occurs or the window is
+closed, we need to add an event loop to the `mainLoop` function as follows:
+
+[source,c++]
+----
+void mainLoop() {
+    bool running = true;
+    while (running) {
+        SDL_Event e;
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_EVENT_QUIT) {
+                running = false;
+            }
+            if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) {
+                running = false;
+            }
+        }
+    }
+}
+----
+
+This code should be fairly self-explanatory. It loops and checks for events like
+pressing the X button until the user has closed the window. This is also
+the loop where we'll later call a function to render a single frame.
+
+Once the window is closed, we need to clean up resources by destroying it and
+terminating SDL itself. This will be our first `cleanup` code:
+
+[source,c++]
+----
+void cleanup() {
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+
+----
+
+Note that in this tutorial, this is the last time we'll have to do anything
+in the cleanup() function. This code will never need to change again.
+
+When you run the program now, you should see a window titled `Vulkan` show up
+until the application is terminated by closing the window.
+
+Here is an example of how to run code on Arch Linux.
+
+== Building and Running on Arch Linux
+
+To compile and run this application on Arch Linux with NVIDIA graphics, install the required compiler, headers, and driver utilities using `pacman`:
+
+[,bash]
+----
+sudo pacman -S gcc sdl3 vulkan-headers vulkan-icd-loader nvidia-utils
+----
+
+Then, compile the `main.cpp` file using `g++` with C++17 support:
+
+[,bash]
+----
+g++ -std=c++17 main.cpp -lSDL3 -o a.out
+----
+
+Finally, run the generated executable:
+
+[,bash]
+----
+./a.out
+----
+
+link:/00_base_code.cpp[C++ code]
