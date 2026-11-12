@@ -10,8 +10,15 @@ find_package(SDL3 CONFIG REQUIRED)
 find_package(volk CONFIG REQUIRED)
 
 add_executable(00_base_code 00_base_code.cpp)
+add_executable(01_instance_creation 01_instance_creation.cpp)
 
-target_link_libraries(00_base_code PRIVATE
+foreach(target IN ITEMS
+    00_base_code
+    01_instance_creation
+)
+
+target_link_libraries(${target} PRIVATE
     SDL3::SDL3
     volk::volk
 )
+endforeach()
