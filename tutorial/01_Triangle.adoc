@@ -194,31 +194,6 @@ in the cleanup() function. This code will never need to change again.
 When you run the program now, you should see a window titled `Vulkan` show up
 until the application is terminated by closing the window.
 
-Here is an example of how to run code on Arch Linux.
-
-== Building and Running on Arch Linux
-
-To compile and run this application on Arch Linux with NVIDIA graphics, install the required compiler, headers, and driver utilities using `pacman`:
-
-[,bash]
-----
-sudo pacman -S gcc sdl3 vulkan-headers vulkan-icd-loader nvidia-utils
-----
-
-Then, compile the `main.cpp` file using `g++` with C++17 support:
-
-[,bash]
-----
-g++ -std=c++17 main.cpp -lSDL3 -o a.out
-----
-
-Finally, run the generated executable:
-
-[,bash]
-----
-./a.out
-----
-
 link:/00_base_code.cpp[C++ code]
 
 = Instance
