@@ -13,12 +13,14 @@ add_executable(00_base_code 00_base_code.cpp)
 add_executable(01_instance_creation 01_instance_creation.cpp)
 add_executable(02_validation_layers 02_validation_layers.cpp)
 add_executable(03_physical_device_selection 03_physical_device_selection.cpp)
+add_executable(04_logical_device 04_logical_device.cpp)
 
 foreach(target IN ITEMS
     00_base_code
     01_instance_creation
     02_validation_layers
     03_physical_device_selection
+    04_logical_device
 )
 
 target_link_libraries(${target} PRIVATE
