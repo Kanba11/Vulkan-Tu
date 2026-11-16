@@ -16,6 +16,7 @@ add_executable(03_physical_device_selection 03_physical_device_selection.cpp)
 add_executable(04_logical_device 04_logical_device.cpp)
 add_executable(05_window_surface 05_window_surface.cpp)
 add_executable(06_swap_chain_creation 06_swap_chain_creation.cpp)
+add_executable(07_image_views 07_image_views.cpp)
 
 foreach(target IN ITEMS
     00_base_code
@@ -25,6 +26,7 @@ foreach(target IN ITEMS
     04_logical_device
     05_window_surface
     06_swap_chain_creation
+    07_image_views
 )
 
 target_link_libraries(${target} PRIVATE
