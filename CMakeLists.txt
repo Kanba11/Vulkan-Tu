@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(SDL3 CONFIG REQUIRED)
-find_package(volk CONFIG REQUIRED)
+add_subdirectory(volk)
 
 add_executable(00_base_code 00_base_code.cpp)
 add_executable(01_instance_creation 01_instance_creation.cpp)
