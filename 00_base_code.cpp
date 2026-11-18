@@ -23,7 +23,9 @@ class HelloTriangleApplication {
 	SDL_Window *window = nullptr;
 
 	void initWindow() {
-		SDL_Init(SDL_INIT_VIDEO);
+		if (!SDL_Init(SDL_INIT_VIDEO)) {
+			throw std::runtime_error(SDL_GetError());
+		}
 		window = SDL_CreateWindow("Vulkan", WIDTH, HEIGHT, SDL_WINDOW_VULKAN);
 	}
 

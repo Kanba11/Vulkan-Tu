@@ -20,7 +20,7 @@ class HelloTriangleApplication {
 	}
 
   private:
-	SDL_Window *window = nullptr;
+	SDL_Window *window   = nullptr;
 	VkInstance  instance;
 
 	void initWindow() {
@@ -30,7 +30,36 @@ class HelloTriangleApplication {
 
 	void initVulkan() {
 		volkInitialize();
-		createInstance();
+
+		VkApplicationInfo appInfo{};
+		appInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+		appInfo.pApplicationName   = "Hello Triangle";
+		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+		appInfo.pEngineName        = "No Engine";
+		appInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
+		appInfo.apiVersion         = VK_API_VERSION_1_4;
+
+		VkInstanceCreateInfo createInfo{};
+		createInfo.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+		createInfo.pApplicationInfo = &appInfo;
+
+		uint32_t           sdlExtensionCount = 0;
+		const char *const *sdlExtensions =
+		    SDL_Vulkan_GetInstanceExtensions(&sdlExtensionCount);
+
+		if (!sdlExtensions) {
+			throw std::runtime_error(SDL_GetError());
+		}
+
+		createInfo.enabledExtensionCount   = sdlExtensionCount;
+		createInfo.ppEnabledExtensionNames = sdlExtensions;
+
+		createInfo.enabledLayerCount = 0;
+
+		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create instance!");
+		}
+
 		volkLoadInstance(instance);
 	}
 
@@ -53,33 +82,6 @@ class HelloTriangleApplication {
 		vkDestroyInstance(instance, nullptr);
 		SDL_DestroyWindow(window);
 		SDL_Quit();
-	}
-
-	void createInstance() {
-		VkApplicationInfo appInfo{};
-		appInfo.sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.pApplicationName   = "Hello Triangle";
-		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.pEngineName        = "No Engine";
-		appInfo.engineVersion      = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.apiVersion         = VK_API_VERSION_1_4;
-
-		VkInstanceCreateInfo createInfo{};
-		createInfo.sType            = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		createInfo.pApplicationInfo = &appInfo;
-
-		uint32_t           sdlExtensionCount = 0;
-		const char *const *sdlExtensions;
-		sdlExtensions = SDL_Vulkan_GetInstanceExtensions(&sdlExtensionCount);
-
-		createInfo.enabledExtensionCount   = sdlExtensionCount;
-		createInfo.ppEnabledExtensionNames = sdlExtensions;
-
-		createInfo.enabledLayerCount = 0;
-
-		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create instance!");
-		}
 	}
 };
 
