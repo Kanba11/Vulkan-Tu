@@ -42,17 +42,14 @@ class HelloTriangleApplication {
 	}
 
   private:
-	SDL_Window *window = nullptr;
-
+	SDL_Window              *window = nullptr;
 	VkInstance               instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 	VkSurfaceKHR             surface;
-
-	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-	VkDevice         device;
-
-	VkQueue graphicsQueue;
-	VkQueue presentQueue;
+	VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE;
+	VkDevice                 device;
+	VkQueue                  graphicsQueue;
+	VkQueue                  presentQueue;
 
 	void initWindow() {
 		SDL_Init(SDL_INIT_VIDEO);
@@ -61,41 +58,7 @@ class HelloTriangleApplication {
 
 	void initVulkan() {
 		volkInitialize();
-		createInstance();
-		volkLoadInstance(instance);
-		setupDebugMessenger();
-		createSurface();
-		pickPhysicalDevice();
-		createLogicalDevice();
-	}
 
-	void mainLoop() {
-		bool running = true;
-		while (running) {
-			SDL_Event e;
-			while (SDL_PollEvent(&e)) {
-				if (e.type == SDL_EVENT_QUIT) {
-					running = false;
-				}
-				if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) {
-					running = false;
-				}
-			}
-		}
-	}
-
-	void cleanup() {
-		vkDestroyDevice(device, nullptr);
-		if (enableValidationLayers) {
-			vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-		}
-		vkDestroySurfaceKHR(instance, surface, nullptr);
-		vkDestroyInstance(instance, nullptr);
-		SDL_DestroyWindow(window);
-		SDL_Quit();
-	}
-
-	void createInstance() {
 		if (enableValidationLayers && !checkValidationLayerSupport()) {
 			throw std::runtime_error("validation layers requested, but not available!");
 		}
@@ -132,6 +95,18 @@ class HelloTriangleApplication {
 		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create instance!");
 		}
+
+		volkLoadInstance(instance);
+
+		if (!enableValidationLayers)
+			return;
+
+		VkDebugUtilsMessengerCreateInfoEXT debugInfo{};
+		populateDebugMessengerCreateInfo(debugInfo);
+
+		if (vkCreateDebugUtilsMessengerEXT(instance, &debugInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+			throw std::runtime_error("failed to set up debug messenger!");
+		}
 	}
 
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
@@ -140,18 +115,6 @@ class HelloTriangleApplication {
 		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 		createInfo.messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 		createInfo.pfnUserCallback = debugCallback;
-	}
-
-	void setupDebugMessenger() {
-		if (!enableValidationLayers)
-			return;
-
-		VkDebugUtilsMessengerCreateInfoEXT createInfo;
-		populateDebugMessengerCreateInfo(createInfo);
-
-		if (vkCreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
-			throw std::runtime_error("failed to set up debug messenger!");
-		}
 	}
 
 	void createSurface() {
@@ -188,8 +151,8 @@ class HelloTriangleApplication {
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		std::set<uint32_t>                   uniqueQueueFamilies = {
-            indices.graphicsFamily.value(),
-            indices.presentFamily.value()};
+		    indices.graphicsFamily.value(),
+		    indices.presentFamily.value()};
 
 		float queuePriority = 1.0f;
 		for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -305,6 +268,32 @@ class HelloTriangleApplication {
 		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
 		return VK_FALSE;
+	}
+
+	void mainLoop() {
+		bool running = true;
+		while (running) {
+			SDL_Event e;
+			while (SDL_PollEvent(&e)) {
+				if (e.type == SDL_EVENT_QUIT) {
+					running = false;
+				}
+				if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) {
+					running = false;
+				}
+			}
+		}
+	}
+
+	void cleanup() {
+		vkDestroyDevice(device, nullptr);
+		if (enableValidationLayers) {
+			vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+		}
+		vkDestroySurfaceKHR(instance, surface, nullptr);
+		vkDestroyInstance(instance, nullptr);
+		SDL_DestroyWindow(window);
+		SDL_Quit();
 	}
 };
 
