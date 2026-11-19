@@ -194,7 +194,7 @@ in the cleanup() function. This code will never need to change again.
 When you run the program now, you should see a window titled `Vulkan` show up
 until the application is terminated by closing the window.
 
-link:/00_base_code.cpp[C++ code]
+link:/00_base_code.cpp[00_base_code]
 
 == Creating an instance
 
@@ -203,13 +203,13 @@ an *instance*. The instance is the connection between your application and the
 Vulkan library, and creating it involves specifying some details about your
 application to the driver.
 
-Start by adding `createInstance` and `volkLoadInstance` function and invoking it in the `initVulkan` function.
+Start by adding a `volkLoadInstance` function and invoking it in the `initVulkan` function.
 
 [source,c++]
 ----
 void initVulkan() {
     volkInitialize();
-    createInstance();
+
     volkLoadInstance(instance);
 }
 ----
@@ -226,19 +226,17 @@ Now, to create an instance, we'll first have to fill in a struct with some
 information about our application. This data is technically optional, but it may
 provide some useful information to the driver to optimize our specific
  application, (e.g., because it uses a well-known graphics engine with
-certain special behavior). This struct is called `vk::ApplicationInfo`:
+certain special behavior). This struct is called `VkApplicationInfo`:
 
 [source,c++]
 ----
-void createInstance() {
-    VkApplicationInfo appInfo{};
-    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
-    appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "No Engine";
-    appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_4;
-}
+VkApplicationInfo appInfo{};
+appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+appInfo.pApplicationName = "Hello Triangle";
+appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+appInfo.pEngineName = "No Engine";
+appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+appInfo.apiVersion = VK_API_VERSION_1_4;
 ----
 
 As mentioned before, many structs in Vulkan require you to explicitly specify
@@ -338,7 +336,7 @@ following chapters should be cleaned up before the instance is destroyed.
 Before continuing with the more complex steps after instance creation, it's time
 to evaluate our debugging options by checking out validation layers.
 
-link:/01_instance_creation.cpp[C++ code]
+link:/01_instance_creation.cpp[01_instance_creation]
 
 == What are validation layers
 
@@ -476,19 +474,6 @@ for (const char* layerName : validationLayers) {
 return true;
 ----
 
-We can now use this function in `createInstance`:
-
-[source,c++]
-----
-void createInstance() {
-    if (enableValidationLayers && !checkValidationLayerSupport()) {
-        throw std::runtime_error("validation layers requested, but not available!");
-    }
-
-    ...
-}
-----
-
 Now run the program in debug mode and ensure that the error does not occur. If
 it does, then have a look at the FAQ.
 
@@ -619,24 +604,6 @@ this handle right under `instance`:
 VkDebugUtilsMessengerEXT debugMessenger;
 ----
 
-Now add a function `setupDebugMessenger` to be called from `initVulkan` right
-after `createInstance`:
-
-[source,c++]
-----
-void initVulkan() {
-    volkInitialize();
-    createInstance();
-    volkLoadInstance(instance);
-    setupDebugMessenger();
-}
-
-void setupDebugMessenger() {
-    if (!enableValidationLayers) return;
-
-}
-----
-
 We'll need to fill in a structure with details about the messenger and its callback:
 
 [source,c++]
@@ -666,9 +633,7 @@ void cleanup() {
     if (enableValidationLayers) {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
-
     vkDestroyInstance(instance, nullptr);
-
     SDL_DestroyWindow(window);
     SDL_Quit();
 }
@@ -692,23 +657,21 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 ...
 
-void setupDebugMessenger() {
-    if (!enableValidationLayers) return;
+if (!enableValidationLayers) return;
 
-    VkDebugUtilsMessengerCreateInfoEXT createInfo;
-    populateDebugMessengerCreateInfo(createInfo);
+VkDebugUtilsMessengerCreateInfoEXT createInfo;
+populateDebugMessengerCreateInfo(createInfo);
 
-    if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
-        throw std::runtime_error("failed to set up debug messenger!");
-    }
+if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+    throw std::runtime_error("failed to set up debug messenger!");
 }
 ----
 
-We can now re-use this in the `createInstance` function:
+We can now re-use this in the `initVulkan` function:
 
 [source,c++]
 ----
-void createInstance() {
+void initVulkan() {
     ...
 
     VkInstanceCreateInfo createInfo{};
@@ -755,7 +718,7 @@ you how helpful the validation layers are with catching them and to teach you
 how important it is to know exactly what you're doing with Vulkan. Now it's time
 to look at Vulkan devices in the system.
 
-link:/02_validation_layers.cpp[C++ code]
+link:/02_validation_layers.cpp[02_validation_layers]
 
 == Selecting a physical device
 
@@ -763,24 +726,6 @@ After initializing the Vulkan library through a VkInstance we need to look for
 and select a graphics card in the system that supports the features we need. In
 fact we can select any number of graphics cards and use them simultaneously, but
 in this tutorial we'll stick to the first graphics card that suits our needs.
-
-We'll add a function `pickPhysicalDevice` and add a call to it in the
-`initVulkan` function.
-
-[source,c++]
-----
-void initVulkan() {
-    volkInitialize();
-    createInstance();
-    volkLoadInstance(instance);
-    setupDebugMessenger();
-    pickPhysicalDevice();
-}
-
-void pickPhysicalDevice() {
-
-}
-----
 
 The graphics card that we'll end up selecting will be stored in a
 VkPhysicalDevice handle that is added as a new class member. This object will be
@@ -794,40 +739,20 @@ VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
 Listing the graphics cards is very similar to listing extensions and starts with
 querying just the number.
+If there are 0 devices with Vulkan support then there is no point going further.
+Otherwise we can now allocate an array to hold all of the VkPhysicalDevice handles.
 
 [source,c++]
 ----
 uint32_t deviceCount = 0;
 vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
-----
 
-If there are 0 devices with Vulkan support then there is no point going further.
-
-[source,c++]
-----
 if (deviceCount == 0) {
     throw std::runtime_error("failed to find GPUs with Vulkan support!");
 }
-----
 
-Otherwise we can now allocate an array to hold all of the VkPhysicalDevice
-handles.
-
-[source,c++]
-----
 std::vector<VkPhysicalDevice> devices(deviceCount);
 vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
-----
-
-Now we need to evaluate each of them and check if they are suitable for the
-operations we want to perform, because not all graphics cards are created equal.
-For that we'll introduce a new function:
-
-[source,c++]
-----
-bool isDeviceSuitable(VkPhysicalDevice device) {
-    return true;
-}
 ----
 
 And we'll check if any of the physical devices meet the requirements that we'll
@@ -847,111 +772,9 @@ if (physicalDevice == VK_NULL_HANDLE) {
 }
 ----
 
-The next section will introduce the first requirements that we'll check for in
-the `isDeviceSuitable` function. As we'll start using more Vulkan features in
-the later chapters we will also extend this function to include more checks.
-
-== Base device suitability checks
-
-To evaluate the suitability of a device we can start by querying for some
-details. Basic device properties like the name, type and supported Vulkan
-version can be queried using vkGetPhysicalDeviceProperties.
-
-[source,c++]
-----
-VkPhysicalDeviceProperties deviceProperties;
-vkGetPhysicalDeviceProperties(device, &deviceProperties);
-----
-
-The support for optional features like texture compression, 64 bit floats and
-multi viewport rendering (useful for VR) can be queried using
-vkGetPhysicalDeviceFeatures:
-
-[source,c++]
-----
-VkPhysicalDeviceFeatures deviceFeatures;
-vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-----
-
-There are more details that can be queried from devices that we'll discuss later
-concerning device memory and queue families (see the next section).
-
-As an example, let's say we consider our application only usable for dedicated
-graphics cards that support geometry shaders. Then the `isDeviceSuitable`
-function would look like this:
-
-[source,c++]
-----
-bool isDeviceSuitable(VkPhysicalDevice device) {
-    VkPhysicalDeviceProperties deviceProperties;
-    VkPhysicalDeviceFeatures deviceFeatures;
-    vkGetPhysicalDeviceProperties(device, &deviceProperties);
-    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-
-    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
-           deviceFeatures.geometryShader;
-}
-----
-
-Instead of just checking if a device is suitable or not and going with the first
-one, you could also give each device a score and pick the highest one. That way
-you could favor a dedicated graphics card by giving it a higher score, but fall
-back to an integrated GPU if that's the only available one. You could implement
-something like that as follows:
-
-[source,c++]
-----
-#include <map>
-
-...
-
-void pickPhysicalDevice() {
-    ...
-
-    // Use an ordered map to automatically sort candidates by increasing score
-    std::multimap<int, VkPhysicalDevice> candidates;
-
-    for (const auto& device : devices) {
-        int score = rateDeviceSuitability(device);
-        candidates.insert(std::make_pair(score, device));
-    }
-
-    // Check if the best candidate is suitable at all
-    if (candidates.rbegin()->first > 0) {
-        physicalDevice = candidates.rbegin()->second;
-    } else {
-        throw std::runtime_error("failed to find a suitable GPU!");
-    }
-}
-
-int rateDeviceSuitability(VkPhysicalDevice device) {
-    ...
-
-    int score = 0;
-
-    // Discrete GPUs have a significant performance advantage
-    if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-        score += 1000;
-    }
-
-    // Maximum possible size of textures affects graphics quality
-    score += deviceProperties.limits.maxImageDimension2D;
-
-    // Application can't function without geometry shaders
-    if (!deviceFeatures.geometryShader) {
-        return 0;
-    }
-
-    return score;
-}
-----
-
-You don't need to implement all that for this tutorial, but it's to give you an
-idea of how you could design your device selection process. Of course you can
-also just display the names of the choices and allow the user to select.
-
-Because we're just starting out, Vulkan support is the only thing we need and
-therefore we'll settle for just any GPU:
+Now we need to evaluate each of them and check if they are suitable for the
+operations we want to perform, because not all graphics cards are created equal.
+For that we'll introduce a new function:
 
 [source,c++]
 ----
@@ -959,8 +782,6 @@ bool isDeviceSuitable(VkPhysicalDevice device) {
     return true;
 }
 ----
-
-In the next section we'll discuss the first real required feature to check for.
 
 == Queue families
 
@@ -988,19 +809,6 @@ uint32_t findQueueFamilies(VkPhysicalDevice device) {
 However, in one of the next chapters we're already going to look for yet another
 queue, so it's better to prepare for that and bundle the indices into a struct:
 
-[source,c++]
-----
-struct QueueFamilyIndices {
-    uint32_t graphicsFamily;
-};
-
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
-    QueueFamilyIndices indices;
-    // Logic to find queue family indices to populate struct with
-    return indices;
-}
-----
-
 But what if a queue family is not available? We could throw an exception in
 `findQueueFamilies`, but this function is not really the right place to make
 decisions about device suitability. For example, we may *prefer* devices with a
@@ -1009,43 +817,18 @@ of indicating whether a particular queue family was found.
 
 It's not really possible to use a magic value to indicate the nonexistence of a
 queue family, since any value of `uint32_t` could in theory be a valid queue
-family index including `0`. Luckily C++17 introduced a data structure to
-distinguish between the case of a value existing or not:
+family index including `0`. Luckily C++17 introduced a data structure to distinguish between the case of a value existing or not.
+
+The process of retrieving the list of queue families is exactly what you expect
+and uses `vkGetPhysicalDeviceQueueFamilyProperties`:
 
 [source,c++]
 ----
-#include <optional>
+uint32_t queueFamilyCount = 0;
+vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
-...
-
-std::optional<uint32_t> graphicsFamily;
-
-std::cout << std::boolalpha << graphicsFamily.has_value() << std::endl; // false
-
-graphicsFamily = 0;
-
-std::cout << std::boolalpha << graphicsFamily.has_value() << std::endl; // true
-----
-
-`std::optional` is a wrapper that contains no value until you assign something
-to it. At any point you can query if it contains a value or not by calling its
-`has_value()` member function. That means that we can change the logic to:
-
-[source,c++]
-----
-#include <optional>
-
-...
-
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-};
-
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
-    QueueFamilyIndices indices;
-    // Assign index to queue families that could be found
-    return indices;
-}
+std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 ----
 
 We can now begin to actually implement `findQueueFamilies`:
@@ -1059,18 +842,6 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
 
     return indices;
 }
-----
-
-The process of retrieving the list of queue families is exactly what you expect
-and uses `vkGetPhysicalDeviceQueueFamilyProperties`:
-
-[source,c++]
-----
-uint32_t queueFamilyCount = 0;
-vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 ----
 
 The VkQueueFamilyProperties struct contains some details about the queue family,
@@ -1103,8 +874,7 @@ bool isDeviceSuitable(VkPhysicalDevice device) {
 }
 ----
 
-To make this a little bit more convenient, we'll also add a generic check to the
-struct itself:
+To make this a little bit more convenient, we'll also add a generic check to the struct itself:
 
 [source,c++]
 ----
@@ -1143,7 +913,7 @@ for (const auto& queueFamily : queueFamilies) {
 Great, that's all we need for now to find the right physical device! The next
 step is to create a logical device to interface with it.
 
-link:/03_physical_device_selection.cpp[C++ code]
+link:/03_physical_device_selection.cpp[03_physical_device_selection]
 
 == Introduction
 
