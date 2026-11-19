@@ -931,25 +931,6 @@ Start by adding a new class member to store the logical device handle in.
 VkDevice device;
 ----
 
-Next, add a `createLogicalDevice` function that is called from `initVulkan`.
-
-[source,c++]
-----
-eoid initVulkan() {
-    volkInitialize();
-    createInstance();
-    volkLoadInstance(instance);
-    setupDebugMessenger();
-    pickPhysicalDevice();
-    createLogicalDevice();
-}
-
-
-void createLogicalDevice() {
-
-}
-----
-
 == Specifying the queues to be created
 
 The creation of a logical device involves specifying a bunch of details in
@@ -1100,7 +1081,7 @@ With the logical device and queue handles we can now actually start using the
 graphics card to do things! In the next few chapters we'll set up the resources
 to present results to the window system.
 
-link:/04_logical_device.cpp[C++ code]
+link:/04_logical_device.cpp[04_logical_device]
 
 Since Vulkan is a platform agnostic API, it can not interface directly with the
 window system on its own. To establish the connection between Vulkan and the
