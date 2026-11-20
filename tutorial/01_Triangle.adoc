@@ -984,18 +984,18 @@ With the previous two structures in place, we can start filling in the main
 
 [source,c++]
 ----
-VkDeviceCreateInfo createInfo{};
-createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+VkDeviceCreateInfo deviceCreateInfo{};
+deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 ----
 
 First add pointers to the queue creation info and device features structs:
 
 [source,c++]
 ----
-createInfo.pQueueCreateInfos = &queueCreateInfo;
-createInfo.queueCreateInfoCount = 1;
+deviceCreateInfo.pQueueCreateInfos    = &queueCreateInfo;
+deviceCreateInfo.queueCreateInfoCount = 1;
 
-createInfo.pEnabledFeatures = &deviceFeatures;
+deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 ----
 
 The remainder of the information bears a resemblance to the
@@ -1012,7 +1012,7 @@ Previous implementations of Vulkan made a distinction between instance and devic
 
 [source,c++]
 ----
-createInfo.enabledExtensionCount = 0;
+devicecreateInfo.enabledExtensionCount = 0;
 
 if (enableValidationLayers) {
     createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -1112,10 +1112,8 @@ implementation of the function very straightforward:
 
 [source,c++]
 ----
-void createSurface() {
-    if (!SDL_Vulkan_CreateSurface(window, instance, nullptr, &surface)) {
-        throw std::runtime_error("failed to create window surface!");
-    }
+if (!SDL_Vulkan_CreateSurface(window, instance, nullptr, &surface)) {
+    throw std::runtime_error("failed to create window surface!");
 }
 ----
 
@@ -1231,15 +1229,18 @@ And modify `VkDeviceCreateInfo` to point to the vector:
 
 [source,c++]
 ----
-createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-createInfo.pQueueCreateInfos = queueCreateInfos.data();
+
+deviceCreateInfo.pQueueCreateInfos    = queueCreateInfos.data();
+deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 ----
 
 If the queue families are the same, then we only need to pass its index once.
-Finally, add a call to retrieve the queue handle:
+Call volkLoadDevice() to load the device-level Vulkan function pointers after creating the logical device.
 
 [source,c++]
 ----
+volkLoadDevice(VkDevice device);
+
 vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 ----
 

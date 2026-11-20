@@ -93,6 +93,30 @@ class HelloTriangleApplication {
 		}
 	}
 
+	void mainLoop() {
+		bool running = true;
+		while (running) {
+			SDL_Event e;
+			while (SDL_PollEvent(&e)) {
+				if (e.type == SDL_EVENT_QUIT) {
+					running = false;
+				}
+				if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) {
+					running = false;
+				}
+			}
+		}
+	}
+
+	void cleanup() {
+		if (enableValidationLayers) {
+			vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+		}
+		vkDestroyInstance(instance, nullptr);
+		SDL_DestroyWindow(window);
+		SDL_Quit();
+	}
+
 	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
 		createInfo                 = {};
 		createInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -144,30 +168,6 @@ class HelloTriangleApplication {
 		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
 		return VK_FALSE;
-	}
-
-	void mainLoop() {
-		bool running = true;
-		while (running) {
-			SDL_Event e;
-			while (SDL_PollEvent(&e)) {
-				if (e.type == SDL_EVENT_QUIT) {
-					running = false;
-				}
-				if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) {
-					running = false;
-				}
-			}
-		}
-	}
-
-	void cleanup() {
-		if (enableValidationLayers) {
-			vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-		}
-		vkDestroyInstance(instance, nullptr);
-		SDL_DestroyWindow(window);
-		SDL_Quit();
 	}
 };
 

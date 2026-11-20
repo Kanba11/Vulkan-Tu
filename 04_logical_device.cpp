@@ -40,7 +40,7 @@ class HelloTriangleApplication {
 	}
 
   private:
-	SDL_Window *window = nullptr;
+	SDL_Window              *window = nullptr;
 	VkInstance               instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 	VkPhysicalDevice         physicalDevice = VK_NULL_HANDLE;
@@ -103,17 +103,7 @@ class HelloTriangleApplication {
 		if (vkCreateDebugUtilsMessengerEXT(instance, &debugInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
 			throw std::runtime_error("failed to set up debug messenger!");
 		}
-	}
 
-	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
-		createInfo                 = {};
-		createInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-		createInfo.messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-		createInfo.pfnUserCallback = debugCallback;
-	}
-
-	void pickPhysicalDevice() {
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -134,9 +124,7 @@ class HelloTriangleApplication {
 		if (physicalDevice == VK_NULL_HANDLE) {
 			throw std::runtime_error("failed to find a suitable GPU!");
 		}
-	}
 
-	void createLogicalDevice() {
 		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
 		VkDeviceQueueCreateInfo queueCreateInfo{};
@@ -149,24 +137,57 @@ class HelloTriangleApplication {
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
 
-		VkDeviceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		VkDeviceCreateInfo deviceCreateInfo{};
+		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-		createInfo.pQueueCreateInfos    = &queueCreateInfo;
-		createInfo.queueCreateInfoCount = 1;
+		deviceCreateInfo.pQueueCreateInfos    = &queueCreateInfo;
+		deviceCreateInfo.queueCreateInfoCount = 1;
 
-		createInfo.pEnabledFeatures = &deviceFeatures;
+		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
-		createInfo.enabledExtensionCount = 0;
+		deviceCreateInfo.enabledExtensionCount = 0;
 
-		createInfo.enabledLayerCount   = 0;
-		createInfo.ppEnabledLayerNames = nullptr;
+		deviceCreateInfo.enabledLayerCount   = 0;
+		deviceCreateInfo.ppEnabledLayerNames = nullptr;
 
-		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+		if (vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create logical device!");
 		}
 
 		vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+	}
+
+	void mainLoop() {
+		bool running = true;
+		while (running) {
+			SDL_Event e;
+			while (SDL_PollEvent(&e)) {
+				if (e.type == SDL_EVENT_QUIT) {
+					running = false;
+				}
+				if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) {
+					running = false;
+				}
+			}
+		}
+	}
+
+	void cleanup() {
+		vkDestroyDevice(device, nullptr);
+		if (enableValidationLayers) {
+			vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+		}
+		vkDestroyInstance(instance, nullptr);
+		SDL_DestroyWindow(window);
+		SDL_Quit();
+	}
+
+	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
+		createInfo                 = {};
+		createInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+		createInfo.messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+		createInfo.pfnUserCallback = debugCallback;
 	}
 
 	bool isDeviceSuitable(VkPhysicalDevice device) {
@@ -243,31 +264,6 @@ class HelloTriangleApplication {
 		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
 		return VK_FALSE;
-	}
-
-	void mainLoop() {
-		bool running = true;
-		while (running) {
-			SDL_Event e;
-			while (SDL_PollEvent(&e)) {
-				if (e.type == SDL_EVENT_QUIT) {
-					running = false;
-				}
-				if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) {
-					running = false;
-				}
-			}
-		}
-	}
-
-	void cleanup() {
-		vkDestroyDevice(device, nullptr);
-		if (enableValidationLayers) {
-			vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-		}
-		vkDestroyInstance(instance, nullptr);
-		SDL_DestroyWindow(window);
-		SDL_Quit();
 	}
 };
 
