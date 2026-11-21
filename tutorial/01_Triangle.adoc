@@ -1878,7 +1878,7 @@ window. The next chapter will begin to cover how we can set up the images as
 render targets and then we start looking into the actual graphics pipeline and
 drawing commands!
 
-link:/06_swap_chain_creation.cpp[C++ code]
+link:/06_swap_chain_creation.cpp[06_swap_chain_creation]
 
 To use any `VkImage`, including those in the swap chain, in the render pipeline
 we have to create a `VkImageView` object. An image view is quite literally a
@@ -1897,37 +1897,12 @@ First add a class member to store the image views in:
 std::vector<VkImageView> swapChainImageViews;
 ----
 
-Create the `createImageViews` function and call it right after swap chain
-creation.
-
-[source,c++]
-----
-void initVulkan() {
-    volkInitialize();
-    createInstance();
-    volkLoadInstance(instance);
-    setupDebugMessenger();
-    createSurface();
-    pickPhysicalDevice();
-    createLogicalDevice();
-    createSwapChain();
-    createImageViews();
-}
-
-void createImageViews() {
-
-}
-----
-
 The first thing we need to do is resize the list to fit all of the image views
 we'll be creating:
 
 [source,c++]
 ----
-void createImageViews() {
-    swapChainImageViews.resize(swapChainImages.size());
-
-}
+swapChainImageViews.resize(swapChainImages.size());
 ----
 
 Next, set up the loop that iterates over all of the swap chain images.
@@ -2018,4 +1993,4 @@ quite ready to be used as a render target just yet. That requires one more step
 of indirection, known as a framebuffer. But first we'll have to set up the
 graphics pipeline.
 
-Link:/07_image_views.cpp[C++ code]
+Link:/07_image_views.cpp[07_image_vires]
