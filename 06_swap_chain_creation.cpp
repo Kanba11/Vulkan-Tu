@@ -78,43 +78,7 @@ class HelloTriangleApplication {
 
 	void initVulkan() {
 		volkInitialize();
-		createInstance();
-		volkLoadInstance(instance);
-		setupDebugMessenger();
-		createSurface();
-		pickPhysicalDevice();
-		createLogicalDevice();
-		createSwapChain();
-	}
 
-	void mainLoop() {
-		bool running = true;
-		while (running) {
-			SDL_Event e;
-			while (SDL_PollEvent(&e)) {
-				if (e.type == SDL_EVENT_QUIT) {
-					running = false;
-				}
-				if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) {
-					running = false;
-				}
-			}
-		}
-	}
-
-	void cleanup() {
-		vkDestroySwapchainKHR(device, swapChain, nullptr);
-		vkDestroyDevice(device, nullptr);
-		if (enableValidationLayers) {
-			vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-		}
-		vkDestroySurfaceKHR(instance, surface, nullptr);
-		vkDestroyInstance(instance, nullptr);
-		SDL_DestroyWindow(window);
-		SDL_Quit();
-	}
-
-	void createInstance() {
 		if (enableValidationLayers && !checkValidationLayerSupport()) {
 			throw std::runtime_error("validation layers requested, but not available!");
 		}
@@ -144,42 +108,28 @@ class HelloTriangleApplication {
 			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *) &debugCreateInfo;
 		} else {
 			createInfo.enabledLayerCount = 0;
-
-			createInfo.pNext = nullptr;
+			createInfo.pNext             = nullptr;
 		}
 
 		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create instance!");
 		}
-	}
 
-	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
-		createInfo                 = {};
-		createInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-		createInfo.messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-		createInfo.pfnUserCallback = debugCallback;
-	}
+		volkLoadInstance(instance);
 
-	void setupDebugMessenger() {
-		if (!enableValidationLayers)
-			return;
+		if (enableValidationLayers) {
+			VkDebugUtilsMessengerCreateInfoEXT debugInfo{};
+			populateDebugMessengerCreateInfo(debugInfo);
 
-		VkDebugUtilsMessengerCreateInfoEXT createInfo;
-		populateDebugMessengerCreateInfo(createInfo);
-
-		if (vkCreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
-			throw std::runtime_error("failed to set up debug messenger!");
+			if (vkCreateDebugUtilsMessengerEXT(instance, &debugInfo, nullptr, &debugMessenger) != VK_SUCCESS) {
+				throw std::runtime_error("failed to set up debug messenger!");
+			}
 		}
-	}
 
-	void createSurface() {
 		if (!SDL_Vulkan_CreateSurface(window, instance, nullptr, &surface)) {
 			throw std::runtime_error("failed to create window surface!");
 		}
-	}
 
-	void pickPhysicalDevice() {
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
@@ -200,13 +150,13 @@ class HelloTriangleApplication {
 		if (physicalDevice == VK_NULL_HANDLE) {
 			throw std::runtime_error("failed to find a suitable GPU!");
 		}
-	}
 
-	void createLogicalDevice() {
 		QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		std::set<uint32_t>                   uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+		std::set<uint32_t>                   uniqueQueueFamilies = {
+		    indices.graphicsFamily.value(),
+		    indices.presentFamily.value()};
 
 		float queuePriority = 1.0f;
 		for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -220,29 +170,29 @@ class HelloTriangleApplication {
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
 
-		VkDeviceCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		VkDeviceCreateInfo deviceCreateInfo{};
+		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-		createInfo.pQueueCreateInfos    = queueCreateInfos.data();
+		deviceCreateInfo.pQueueCreateInfos    = queueCreateInfos.data();
+		deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 
-		createInfo.pEnabledFeatures = &deviceFeatures;
+		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
-		createInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
-		createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+		deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
+		deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-		createInfo.enabledLayerCount   = 0;
-		createInfo.ppEnabledLayerNames = nullptr;
+		deviceCreateInfo.enabledLayerCount   = 0;
+		deviceCreateInfo.ppEnabledLayerNames = nullptr;
 
-		if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+		if (vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &device) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create logical device!");
 		}
 
+		volkLoadDevice(device);
+
 		vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
 		vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
-	}
 
-	void createSwapChain() {
 		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 
 		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -254,36 +204,36 @@ class HelloTriangleApplication {
 			imageCount = swapChainSupport.capabilities.maxImageCount;
 		}
 
-		VkSwapchainCreateInfoKHR createInfo{};
-		createInfo.sType   = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = surface;
+		VkSwapchainCreateInfoKHR chainCreateInfo{};
+		chainCreateInfo.sType   = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		chainCreateInfo.surface = surface;
 
-		createInfo.minImageCount    = imageCount;
-		createInfo.imageFormat      = surfaceFormat.format;
-		createInfo.imageColorSpace  = surfaceFormat.colorSpace;
-		createInfo.imageExtent      = extent;
-		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		chainCreateInfo.minImageCount    = imageCount;
+		chainCreateInfo.imageFormat      = surfaceFormat.format;
+		chainCreateInfo.imageColorSpace  = surfaceFormat.colorSpace;
+		chainCreateInfo.imageExtent      = extent;
+		chainCreateInfo.imageArrayLayers = 1;
+		chainCreateInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		QueueFamilyIndices indices              = findQueueFamilies(physicalDevice);
-		uint32_t           queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+		indices                       = findQueueFamilies(physicalDevice);
+		uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
 		if (indices.graphicsFamily != indices.presentFamily) {
-			createInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = 2;
-			createInfo.pQueueFamilyIndices   = queueFamilyIndices;
+			chainCreateInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
+			chainCreateInfo.queueFamilyIndexCount = 2;
+			chainCreateInfo.pQueueFamilyIndices   = queueFamilyIndices;
 		} else {
-			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			chainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		}
 
-		createInfo.preTransform   = swapChainSupport.capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		createInfo.presentMode    = presentMode;
-		createInfo.clipped        = VK_TRUE;
+		chainCreateInfo.preTransform   = swapChainSupport.capabilities.currentTransform;
+		chainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		chainCreateInfo.presentMode    = presentMode;
+		chainCreateInfo.clipped        = VK_TRUE;
 
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
+		chainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
-		if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+		if (vkCreateSwapchainKHR(device, &chainCreateInfo, nullptr, &swapChain) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create swap chain!");
 		}
 
@@ -293,6 +243,41 @@ class HelloTriangleApplication {
 
 		swapChainImageFormat = surfaceFormat.format;
 		swapChainExtent      = extent;
+	}
+
+	void mainLoop() {
+		bool running = true;
+		while (running) {
+			SDL_Event e;
+			while (SDL_PollEvent(&e)) {
+				if (e.type == SDL_EVENT_QUIT) {
+					running = false;
+				}
+				if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) {
+					running = false;
+				}
+			}
+		}
+	}
+
+	void cleanup() {
+		vkDestroySwapchainKHR(device, swapChain, nullptr);
+		vkDestroyDevice(device, nullptr);
+		if (enableValidationLayers) {
+			vkDestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+		}
+		vkDestroySurfaceKHR(instance, surface, nullptr);
+		vkDestroyInstance(instance, nullptr);
+		SDL_DestroyWindow(window);
+		SDL_Quit();
+	}
+
+	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
+		createInfo                 = {};
+		createInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+		createInfo.messageType     = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+		createInfo.pfnUserCallback = debugCallback;
 	}
 
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats) {

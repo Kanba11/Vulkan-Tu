@@ -1345,6 +1345,11 @@ creation structure:
 ----
 createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
 createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
+...
+
+deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
+deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 ----
 
 Make sure to replace the existing line `createInfo.enabledExtensionCount = 0;` when you do so.
@@ -1642,29 +1647,13 @@ Now that we have all of these helper functions assisting us with the choices we
 have to make at runtime, we finally have all the information that is needed to
 create a working swap chain.
 
-Create a `createSwapChain` function that starts out with the results of these
-calls and make sure to call it from `initVulkan` after logical device creation.
-
 [source,c++]
 ----
-void initVulkan() {
-    volkInitialize();
-    createInstance();
-    volkLoadInstance(instance);
-    setupDebugMessenger();
-    createSurface();
-    pickPhysicalDevice();
-    createLogicalDevice();
-    createSwapChain();
-}
+SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 
-void createSwapChain() {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
-
-    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
-}
+VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 ----
 
 Aside from these properties we also have to decide how many images we would like to have in the swap chain. The implementation specifies the minimum number that it requires to function:
@@ -1696,8 +1685,8 @@ filling in a large structure. It starts out very familiarly:
 [source,c++]
 ----
 VkSwapchainCreateInfoKHR createInfo{};
-createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-createInfo.surface = surface;
+chainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+chainCreateInfo.surface = surface;
 ----
 
 After specifying which surface the swap chain should be tied to, the details of
@@ -1705,12 +1694,12 @@ the swap chain images are specified:
 
 [source,c++]
 ----
-createInfo.minImageCount = imageCount;
-createInfo.imageFormat = surfaceFormat.format;
-createInfo.imageColorSpace = surfaceFormat.colorSpace;
-createInfo.imageExtent = extent;
-createInfo.imageArrayLayers = 1;
-createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+chainCreateInfo.minImageCount = imageCount;
+chainCreateInfo.imageFormat = surfaceFormat.format;
+chainCreateInfo.imageColorSpace = surfaceFormat.colorSpace;
+chainCreateInfo.imageExtent = extent;
+chainCreateInfo.imageArrayLayers = 1;
+chainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 ----
 
 The `imageArrayLayers` specifies the amount of layers each image consists of.
@@ -1725,17 +1714,17 @@ the rendered image to a swap chain image.
 
 [source,c++]
 ----
-QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+indices = findQueueFamilies(physicalDevice);
 uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
 if (indices.graphicsFamily != indices.presentFamily) {
-    createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-    createInfo.queueFamilyIndexCount = 2;
-    createInfo.pQueueFamilyIndices = queueFamilyIndices;
+    chainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+    chainCreateInfo.queueFamilyIndexCount = 2;
+    chainCreateInfo.pQueueFamilyIndices = queueFamilyIndices;
 } else {
-    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    createInfo.queueFamilyIndexCount = 0; // Optional
-    createInfo.pQueueFamilyIndices = nullptr; // Optional
+    chainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    chainCreateInfo.queueFamilyIndexCount = 0; // Optional
+    chainCreateInfo.pQueueFamilyIndices = nullptr; // Optional
 }
 ----
 
@@ -1764,7 +1753,7 @@ queue families.
 
 [source,c++]
 ----
-createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+chainCreateInfo.preTransform = swapChainSupport.capabilities.currentTransform;
 ----
 
 We can specify that a certain transform should be applied to images in the swap
@@ -1774,7 +1763,7 @@ any transformation, simply specify the current transformation.
 
 [source,c++]
 ----
-createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+chainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 ----
 
 The `compositeAlpha` field specifies if the alpha channel should be used for
@@ -1783,8 +1772,8 @@ simply ignore the alpha channel, hence `VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR`.
 
 [source,c++]
 ----
-createInfo.presentMode = presentMode;
-createInfo.clipped = VK_TRUE;
+chainCreateInfo.presentMode = presentMode;
+chainCreateInfo.clipped = VK_TRUE;
 ----
 
 The `presentMode` member speaks for itself. If the `clipped` member is set to
@@ -1795,7 +1784,7 @@ you'll get the best performance by enabling clipping.
 
 [source,c++]
 ----
-createInfo.oldSwapchain = VK_NULL_HANDLE;
+chainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 ----
 
 That leaves one last field, `oldSwapchain`. With Vulkan it's possible that your swap chain becomes invalid or unoptimized while your application is
