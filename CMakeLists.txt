@@ -21,24 +21,30 @@ add_executable(07_image_views 07_image_views.cpp)
 add_executable(08_shader_modules 08_shader_modules.cpp)
 
 set(SLANG_SHADER_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/08_shader_base.slang")
-set(SLANG_SHADER_OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/build/shaders/slang.spv")
+set(SLANG_SHADER_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/shaders/slang.spv")
 
 add_custom_command(
     OUTPUT "${SLANG_SHADER_OUTPUT}"
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_SOURCE_DIR}/build/shaders"
-    COMMAND "${SLANGC_EXECUTABLE}"
-        -target spirv
-        -entry vertMain
-        -entry fragMain
-        "${SLANG_SHADER_SOURCE}"
-        -o "${SLANG_SHADER_OUTPUT}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+            "${CMAKE_CURRENT_BINARY_DIR}/shaders"
+    COMMAND ${SLANGC_EXECUTABLE}
+            "${SLANG_SHADER_SOURCE}"
+            -target spirv
+            -profile spirv_1_4
+            -entry vertMain
+            -entry fragMain
+            -fvk-use-entrypoint-name
+            -o "${SLANG_SHADER_OUTPUT}"
     DEPENDS "${SLANG_SHADER_SOURCE}"
-    COMMENT "Compiling 08_shader_base.slang to shaders/slang.spv"
+    COMMENT "Compiling Slang shader"
     VERBATIM
 )
 
 add_custom_target(08_shader_modules_shaders DEPENDS "${SLANG_SHADER_OUTPUT}")
 add_dependencies(08_shader_modules 08_shader_modules_shaders)
+target_compile_definitions(08_shader_modules PRIVATE
+    SHADER_FILE_PATH=\"${SLANG_SHADER_OUTPUT}\"
+)
 
 foreach(target IN ITEMS
     00_base_code

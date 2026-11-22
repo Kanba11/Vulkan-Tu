@@ -269,7 +269,7 @@ class HelloTriangleApplication {
 			}
 		}
 		
-		auto           shaderCode   = readFile("shaders/slang.spv");
+		auto           shaderCode   = readFile(SHADER_FILE_PATH);
 		VkShaderModule shaderModule = createShaderModule(shaderCode);
 
 		VkPipelineShaderStageCreateInfo vertShaderStageInfo{};

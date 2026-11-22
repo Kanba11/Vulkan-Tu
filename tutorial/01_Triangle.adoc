@@ -2268,7 +2268,7 @@ Shader modules are just a thin wrapper around the shader bytecode that we've pre
 
 [source,c++]
 ----
-auto           shaderCode   = readFile("shaders/slang.spv");
+auto           shaderCode   = readFile(SHADER_FILE_PATH);
 VkShaderModule shaderModule = createShaderModule(shaderCode);
 ----
 
