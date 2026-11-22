@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(SDL3 CONFIG REQUIRED)
+find_program(SLANGC_EXECUTABLE NAMES slangc REQUIRED)
 add_subdirectory(volk)
 
 add_executable(00_base_code 00_base_code.cpp)
@@ -17,6 +18,27 @@ add_executable(04_logical_device 04_logical_device.cpp)
 add_executable(05_window_surface 05_window_surface.cpp)
 add_executable(06_swap_chain_creation 06_swap_chain_creation.cpp)
 add_executable(07_image_views 07_image_views.cpp)
+add_executable(08_shader_modules 08_shader_modules.cpp)
+
+set(SLANG_SHADER_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/08_shader_base.slang")
+set(SLANG_SHADER_OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/build/shaders/slang.spv")
+
+add_custom_command(
+    OUTPUT "${SLANG_SHADER_OUTPUT}"
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_CURRENT_SOURCE_DIR}/build/shaders"
+    COMMAND "${SLANGC_EXECUTABLE}"
+        -target spirv
+        -entry vertMain
+        -entry fragMain
+        "${SLANG_SHADER_SOURCE}"
+        -o "${SLANG_SHADER_OUTPUT}"
+    DEPENDS "${SLANG_SHADER_SOURCE}"
+    COMMENT "Compiling 08_shader_base.slang to shaders/slang.spv"
+    VERBATIM
+)
+
+add_custom_target(08_shader_modules_shaders DEPENDS "${SLANG_SHADER_OUTPUT}")
+add_dependencies(08_shader_modules 08_shader_modules_shaders)
 
 foreach(target IN ITEMS
     00_base_code
@@ -27,6 +49,7 @@ foreach(target IN ITEMS
     05_window_surface
     06_swap_chain_creation
     07_image_views
+    08_shader_modules
 )
 
 target_link_libraries(${target} PRIVATE
