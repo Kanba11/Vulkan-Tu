@@ -19,9 +19,10 @@ add_executable(05_window_surface 05_window_surface.cpp)
 add_executable(06_swap_chain_creation 06_swap_chain_creation.cpp)
 add_executable(07_image_views 07_image_views.cpp)
 add_executable(08_shader_modules 08_shader_modules.cpp)
+add_executable(09_fixed_functions 09_fixed_functions.cpp)
 
 set(SLANG_SHADER_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/08_shader_base.slang")
-set(SLANG_SHADER_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/shaders/slang.spv")
+set(SLANG_SHADER_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/shaders/shader.spv")
 
 add_custom_command(
     OUTPUT "${SLANG_SHADER_OUTPUT}"
@@ -40,11 +41,19 @@ add_custom_command(
     VERBATIM
 )
 
-add_custom_target(08_shader_modules_shaders DEPENDS "${SLANG_SHADER_OUTPUT}")
-add_dependencies(08_shader_modules 08_shader_modules_shaders)
-target_compile_definitions(08_shader_modules PRIVATE
-    SHADER_FILE_PATH=\"${SLANG_SHADER_OUTPUT}\"
+add_custom_target(08_shader_modules_shaders
+    DEPENDS "${SLANG_SHADER_OUTPUT}"
 )
+add_dependencies(08_shader_modules 08_shader_modules_shaders)
+add_dependencies(09_fixed_functions 08_shader_modules_shaders)
+foreach(target IN ITEMS
+    08_shader_modules
+    09_fixed_functions
+)
+    target_compile_definitions(${target} PRIVATE
+        SHADER_FILE_PATH=\"${SLANG_SHADER_OUTPUT}\"
+    )
+endforeach()
 
 foreach(target IN ITEMS
     00_base_code
@@ -56,6 +65,7 @@ foreach(target IN ITEMS
     06_swap_chain_creation
     07_image_views
     08_shader_modules
+    09_fixed_functions
 )
 
 target_link_libraries(${target} PRIVATE

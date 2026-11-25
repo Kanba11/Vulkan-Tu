@@ -268,7 +268,7 @@ class HelloTriangleApplication {
 				throw std::runtime_error("failed to create image views!");
 			}
 		}
-		
+
 		auto           shaderCode   = readFile(SHADER_FILE_PATH);
 		VkShaderModule shaderModule = createShaderModule(shaderCode);
 
