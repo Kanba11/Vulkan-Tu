@@ -21,6 +21,7 @@ add_executable(07_image_views 07_image_views.cpp)
 add_executable(08_shader_modules 08_shader_modules.cpp)
 add_executable(09_fixed_functions 09_fixed_functions.cpp)
 add_executable(10_render_passes 10_render_passes.cpp)
+add_executable(11_graphics_pipeline_complete 11_graphics_pipeline_complete.cpp)
 
 set(SLANG_SHADER_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/08_shader_base.slang")
 set(SLANG_SHADER_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/shaders/shader.spv")
@@ -45,12 +46,12 @@ add_custom_command(
 add_custom_target(08_shader_modules_shaders
     DEPENDS "${SLANG_SHADER_OUTPUT}"
 )
-add_dependencies(08_shader_modules 08_shader_modules_shaders)
-add_dependencies(09_fixed_functions 08_shader_modules_shaders)
+
 foreach(target IN ITEMS
     08_shader_modules
     09_fixed_functions
     10_render_passes
+    11_graphics_pipeline_complete
 )
     target_compile_definitions(${target} PRIVATE
         SHADER_FILE_PATH=\"${SLANG_SHADER_OUTPUT}\"
@@ -69,6 +70,7 @@ foreach(target IN ITEMS
     08_shader_modules
     09_fixed_functions
     10_render_passes
+    11_graphics_pipeline_complete
 )
 
 target_link_libraries(${target} PRIVATE

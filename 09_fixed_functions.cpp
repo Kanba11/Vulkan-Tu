@@ -287,7 +287,6 @@ class HelloTriangleApplication {
 		fragShaderStageInfo.pName  = "fragMain";
 
 		VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
-		vkDestroyShaderModule(device, shaderModule, nullptr);
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
