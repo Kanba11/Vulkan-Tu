@@ -22,7 +22,8 @@ add_executable(08_shader_modules 08_shader_modules.cpp)
 add_executable(09_fixed_functions 09_fixed_functions.cpp)
 add_executable(10_render_passes 10_render_passes.cpp)
 add_executable(11_graphics_pipeline_complete 11_graphics_pipeline_complete.cpp)
-add_executable(12_frame_buffers 12_frame_buffers.cpp)
+add_executable(12_framebuffers 12_framebuffers.cpp)
+add_executable(13_command_buffers 13_command_buffers.cpp)
 
 set(SLANG_SHADER_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/08_shader_base.slang")
 set(SLANG_SHADER_OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/shaders/shader.spv")
@@ -53,7 +54,8 @@ foreach(target IN ITEMS
     09_fixed_functions
     10_render_passes
     11_graphics_pipeline_complete
-    12_frame_buffers
+    12_framebuffers
+    13_command_buffers
 )
     target_compile_definitions(${target} PRIVATE
         SHADER_FILE_PATH=\"${SLANG_SHADER_OUTPUT}\"
@@ -73,7 +75,8 @@ foreach(target IN ITEMS
     09_fixed_functions
     10_render_passes
     11_graphics_pipeline_complete
-    12_frame_buffers
+    12_framebuffers
+    13_command_buffers
 )
 
 target_link_libraries(${target} PRIVATE

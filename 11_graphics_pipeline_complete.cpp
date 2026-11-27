@@ -188,7 +188,7 @@ class HelloTriangleApplication {
 		deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 
 		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
-		createInfo.pNext                  = &vulkan11Features;
+		deviceCreateInfo.pNext            = &vulkan11Features;
 
 		deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
 		deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
@@ -408,7 +408,6 @@ class HelloTriangleApplication {
 			throw std::runtime_error("failed to create graphics pipeline!");
 		}
 
-
 		vkDestroyShaderModule(device, shaderModule, nullptr);
 	}
 
@@ -533,7 +532,7 @@ class HelloTriangleApplication {
 	bool isDeviceSuitable(VkPhysicalDevice device) {
 		QueueFamilyIndices indices = findQueueFamilies(device);
 
-		bool extensionsSupported = checkDeviceExtensionSupport(device);
+		bool extensionsSupported           = checkDeviceExtensionSupport(device);
 		bool shaderDrawParametersSupported = supportsShaderDrawParameters(device);
 
 		bool swapChainAdequate = false;

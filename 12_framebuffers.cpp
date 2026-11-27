@@ -189,7 +189,7 @@ class HelloTriangleApplication {
 		deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 
 		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
-		createInfo.pNext                  = &vulkan11Features;
+		deviceCreateInfo.pNext            = &vulkan11Features;
 
 		deviceCreateInfo.enabledExtensionCount   = static_cast<uint32_t>(deviceExtensions.size());
 		deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
